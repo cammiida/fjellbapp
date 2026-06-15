@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cabin Renovation Tracker — Data Model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --font-body: 'Sora', system-ui, sans-serif;
+        --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+
+        --bg: #0a1622;
+        --surface: #0f1f30;
+        --surface2: #15293c;
+        --grid: rgba(120, 170, 210, 0.06);
+        --border: rgba(150, 190, 220, 0.12);
+        --border-bright: rgba(150, 190, 220, 0.26);
+        --text: #dbe7f1;
+        --text-dim: #8ba3b8;
+
+        --people: #38bdf8;
+        --people-dim: rgba(56, 189, 248, 0.13);
+        --build: #2dd4bf;
+        --build-dim: rgba(45, 212, 191, 0.13);
+        --money: #fbbf24;
+        --money-dim: rgba(251, 191, 36, 0.13);
+        --docs: #34d399;
+        --docs-dim: rgba(52, 211, 153, 0.13);
+        --defer: #93a6b8;
+        --defer-dim: rgba(147, 166, 184, 0.10);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #eef3f8;
+          --surface: #ffffff;
+          --surface2: #e7eef5;
+          --grid: rgba(30, 80, 130, 0.07);
+          --border: rgba(20, 50, 80, 0.12);
+          --border-bright: rgba(20, 50, 80, 0.26);
+          --text: #14283b;
+          --text-dim: #51697e;
+          --people: #0369a1;
+          --people-dim: rgba(3, 105, 161, 0.10);
+          --build: #0d9488;
+          --build-dim: rgba(13, 148, 136, 0.10);
+          --money: #b45309;
+          --money-dim: rgba(180, 83, 9, 0.10);
+          --docs: #047857;
+          --docs-dim: rgba(4, 120, 87, 0.10);
+          --defer: #64788c;
+          --defer-dim: rgba(100, 120, 140, 0.10);
+        }
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background-color: var(--bg);
+        background-image:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 28px 28px;
+        color: var(--text);
+        font-family: var(--font-body);
+        padding: 48px 40px 80px;
+        min-height: 100vh;
+        line-height: 1.5;
+      }
+      .container { max-width: 1160px; margin: 0 auto; }
+
+      @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+      .animate { animation: fadeUp 0.45s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+      }
+
+      .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--people); margin-bottom: 12px; }
+      h1 { font-size: 40px; font-weight: 700; letter-spacing: -1.2px; margin-bottom: 10px; text-wrap: balance; }
+      .lead { font-size: 15.5px; line-height: 1.7; color: var(--text-dim); max-width: 780px; margin-bottom: 14px; }
+      .lead code, .card code, .callout code {
+        font-family: var(--font-mono); font-size: 0.86em; background: var(--people-dim);
+        color: var(--people); padding: 1px 6px; border-radius: 4px;
+      }
+
+      .section-label {
+        display: flex; align-items: center; gap: 10px;
+        font-family: var(--font-mono); font-size: 12px; letter-spacing: 1.5px;
+        text-transform: uppercase; color: var(--text-dim); margin: 46px 0 18px;
+      }
+      .section-label::before {
+        content: ''; width: 9px; height: 9px; border-radius: 2px;
+        background: var(--accent, var(--people)); box-shadow: 0 0 0 4px var(--accent-dim, var(--people-dim));
+      }
+      .section-label .rule { flex: 1; height: 1px; background: var(--border); }
+
+      .mermaid-wrap {
+        position: relative;
+        background:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+          var(--surface);
+        background-size: 22px 22px, 22px 22px, auto;
+        border: 1px solid var(--border-bright);
+        border-radius: 14px; padding: 28px 22px; overflow: auto;
+        max-height: 80vh;
+        scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent;
+      }
+      .mermaid-wrap::-webkit-scrollbar { width: 7px; height: 7px; }
+      .mermaid-wrap::-webkit-scrollbar-track { background: transparent; }
+      .mermaid-wrap::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+      .mermaid-wrap .mermaid { display: flex; min-width: min-content; min-height: min-content; }
+      .mermaid-wrap .mermaid svg { margin: auto; display: block; }
+      .mermaid-wrap.is-zoomed { cursor: grab; }
+      .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+
+      .zoom-controls {
+        position: absolute; top: 10px; right: 10px; display: flex; gap: 2px; z-index: 10;
+        background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 3px;
+      }
+      .zoom-controls button {
+        width: 30px; height: 30px; border: none; background: transparent; color: var(--text-dim);
+        font-family: var(--font-mono); font-size: 15px; cursor: pointer; border-radius: 5px;
+        display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, color 0.15s ease;
+      }
+      .zoom-controls button:hover { background: var(--border); color: var(--text); }
+      .hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-top: 10px; opacity: 0.85; }
+
+      .mermaid .er.entityLabel { font-family: var(--font-body) !important; font-weight: 600 !important; }
+      .mermaid text { font-family: var(--font-mono) !important; }
+      .mermaid .relationshipLabel { font-family: var(--font-mono) !important; }
+
+      .legend {
+        display: flex; gap: 22px; flex-wrap: wrap; margin-top: 16px; padding: 14px 18px;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      }
+      .legend-item { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); }
+      .legend-notation { font-weight: 600; color: var(--text); letter-spacing: 1px; }
+
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+      .card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-left: 3px solid var(--accent, var(--people)); border-radius: 10px; padding: 16px 18px;
+      }
+      .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: baseline; gap: 8px; }
+      .card h3 .tag {
+        font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase;
+        color: var(--accent, var(--people)); background: var(--accent-dim, var(--people-dim)); padding: 2px 6px; border-radius: 4px;
+      }
+      .card p { font-size: 13px; line-height: 1.6; color: var(--text-dim); overflow-wrap: break-word; }
+      .card p + p { margin-top: 7px; }
+      .card .seam {
+        margin-top: 9px; font-family: var(--font-mono); font-size: 11px; color: var(--text);
+        background: var(--surface2); border-radius: 6px; padding: 7px 9px; line-height: 1.5;
+      }
+      .card .seam b { color: var(--accent, var(--people)); font-weight: 600; }
+
+      .c-people { --accent: var(--people); --accent-dim: var(--people-dim); }
+      .c-build  { --accent: var(--build);  --accent-dim: var(--build-dim); }
+      .c-money  { --accent: var(--money);  --accent-dim: var(--money-dim); }
+      .c-docs   { --accent: var(--docs);   --accent-dim: var(--docs-dim); }
+      .c-defer  { --accent: var(--defer);  --accent-dim: var(--defer-dim); }
+
+      .callout {
+        background: var(--money-dim); border: 1px solid var(--border); border-left: 3px solid var(--money);
+        border-radius: 0 10px 10px 0; padding: 15px 20px; font-size: 13.5px; line-height: 1.65; color: var(--text-dim); margin-top: 18px;
+      }
+      .callout strong { color: var(--text); }
+      .callout code { background: var(--money-dim); color: var(--money); }
+
+      @media (max-width: 720px) {
+        body { padding: 28px 16px 56px; }
+        h1 { font-size: 27px; }
+        .mermaid-wrap { padding: 16px 10px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <p class="eyebrow animate" style="--i: 0">fjellbapp · domain model · v3</p>
+      <h1 class="animate" style="--i: 1">Cabin Renovation Tracker — Data Model</h1>
+      <p class="lead animate" style="--i: 2">
+        The agreed initial schema. Everything is scoped to one <code>Project</code>; people and
+        companies share one <code>Party</code> table (roles, not types); IDs are client-generated
+        UUIDs. <strong>v3</strong> folds in the grilling-session refinements: a polymorphic
+        <code>Expense Line</code> (one receipt, many items), a <code>Tool Availability</code> table
+        (one tool, many hold windows), a mandatory polymorphic target on <code>Note</code>, and a
+        model-wide provenance + <code>Audit Log</code> convention. Domain clusters, deferred
+        concepts, and key decisions follow the diagram.
+      </p>
+
+      <div class="legend animate" style="--i: 3">
+        <div class="legend-item"><span class="legend-notation">||</span>&nbsp;one and only one</div>
+        <div class="legend-item"><span class="legend-notation">o|</span>&nbsp;zero or one</div>
+        <div class="legend-item"><span class="legend-notation">o{</span>&nbsp;zero or many</div>
+        <div class="legend-item"><span class="legend-notation">|{</span>&nbsp;one or many</div>
+        <div class="legend-item">PK / FK&nbsp;= primary / foreign key</div>
+        <div class="legend-item" style="color: var(--text)">Ctrl/⌘ + scroll to zoom · drag to pan</div>
+      </div>
+
+      <div class="section-label" style="--accent: var(--people); --accent-dim: var(--people-dim)">
+        Entity–relationship diagram <span class="rule"></span>
+      </div>
+
+      <div class="mermaid-wrap animate" style="--i: 4">
+        <div class="zoom-controls">
+          <button onclick="zoomDiagram(this, 1.2)" title="Zoom in">+</button>
+          <button onclick="zoomDiagram(this, 0.8)" title="Zoom out">&minus;</button>
+          <button onclick="resetZoom(this)" title="Reset zoom">&#8634;</button>
+        </div>
+        <pre class="mermaid">
+erDiagram
+  PROJECT ||--o{ PARTY : "has"
+  PROJECT ||--o{ MEMBERSHIP : "grants"
+  PROJECT ||--o{ PHASE : "has"
+  PROJECT ||--o{ TASK : "has"
+  PROJECT ||--o{ MATERIAL : "has"
+  PROJECT ||--o{ TOOL : "has"
+  PROJECT ||--o{ BUDGET_CATEGORY : "has"
+  PROJECT ||--o{ EXPENSE : "has"
+  PROJECT ||--o{ ATTACHMENT : "has"
+  PROJECT ||--o{ MILESTONE : "has"
+  PROJECT ||--o{ NOTE : "has"
+
+  PARTY |o--o{ PARTY : "employs"
+  PARTY ||--o| MEMBER : "is login for"
+  PARTY ||--o{ PARTY_ROLE : "tagged"
+  MEMBER ||--o{ MEMBERSHIP : "has"
+
+  PHASE |o--o{ TASK : "groups (optional)"
+  TASK ||--o{ TASK_ASSIGNMENT : "assigned via"
+  PARTY ||--o{ TASK_ASSIGNMENT : "assigned to"
+  TASK ||--o{ TASK_DEPENDENCY : "as blocker"
+  TASK ||--o{ TASK_DEPENDENCY : "as blocked"
+  TASK ||--o{ TASK_MATERIAL : "needs"
+  MATERIAL ||--o{ TASK_MATERIAL : "used by"
+  TASK ||--o{ TASK_TOOL : "needs"
+  TOOL ||--o{ TASK_TOOL : "used by"
+  TOOL ||--o{ TOOL_AVAILABILITY : "held during"
+  MILESTONE ||--o{ MILESTONE_TASK : "fulfilled by"
+  TASK ||--o{ MILESTONE_TASK : "contributes to"
+
+  PARTY |o--o{ MATERIAL : "supplies"
+  PARTY |o--o{ TOOL : "supplies"
+
+  BUDGET_CATEGORY ||--o{ EXPENSE : "categorizes"
+  EXPENSE ||--o{ EXPENSE_LINE : "itemized by"
+  EXPENSE_LINE }o--o| TASK : "may target"
+  EXPENSE_LINE }o--o| MATERIAL : "may target"
+  EXPENSE_LINE }o--o| TOOL : "may target"
+  EXPENSE_LINE }o--o| PARTY : "may target"
+
+  NOTE }o--o| TASK : "about (one of)"
+  NOTE }o--o| MATERIAL : "about (one of)"
+  NOTE }o--o| PARTY : "about (one of)"
+
+  ATTACHMENT ||--o{ ATTACHMENT_LINK : "one file, many links"
+  ATTACHMENT_LINK }o--o| TASK : "may target"
+  ATTACHMENT_LINK }o--o| MATERIAL : "may target"
+  ATTACHMENT_LINK }o--o| TOOL : "may target"
+  ATTACHMENT_LINK }o--o| EXPENSE : "may target"
+
+  MEMBER ||--o{ AUDIT_LOG : "acted"
+
+  PROJECT {
+    uuid id PK
+    string name
+    enum kind
+  }
+  PARTY {
+    uuid id PK
+    enum kind
+    string name
+    uuid employer_party_id FK
+    json metadata
+  }
+  PARTY_ROLE {
+    uuid party_id FK
+    enum role
+  }
+  MEMBER {
+    uuid id PK
+    uuid party_id FK
+    enum app_role
+    string credentials
+  }
+  MEMBERSHIP {
+    uuid id PK
+    uuid member_id FK
+    uuid project_id FK
+    enum role
+  }
+  PHASE {
+    uuid id PK
+    string name
+    int sort_order
+  }
+  TASK {
+    uuid id PK
+    uuid phase_id FK
+    enum status
+    date start_date
+    date due_date
+    money estimate
+    json labour_estimate
+  }
+  TASK_ASSIGNMENT {
+    uuid task_id FK
+    uuid party_id FK
+  }
+  TASK_DEPENDENCY {
+    uuid id PK
+    uuid blocking_task_id FK
+    uuid blocked_task_id FK
+  }
+  TASK_MATERIAL {
+    uuid task_id FK
+    uuid material_id FK
+    numeric quantity
+  }
+  TASK_TOOL {
+    uuid task_id FK
+    uuid tool_id FK
+  }
+  MATERIAL {
+    uuid id PK
+    string name
+    uuid supplier_party_id FK
+    enum kind
+    string unit
+    money cost
+    enum order_status
+    date expected_arrival
+    date received_at
+    json specs
+  }
+  TOOL {
+    uuid id PK
+    string name
+    uuid supplier_party_id FK
+    enum acquisition
+  }
+  TOOL_AVAILABILITY {
+    uuid id PK
+    uuid tool_id FK
+    date from_date
+    date to_date
+    enum mode
+  }
+  BUDGET_CATEGORY {
+    uuid id PK
+    string name
+    money budget_amount
+  }
+  EXPENSE {
+    uuid id PK
+    uuid category_id FK
+    enum status
+    money amount
+    date paid_at
+  }
+  EXPENSE_LINE {
+    uuid id PK
+    uuid expense_id FK
+    string entity_type
+    uuid entity_id
+    money amount
+  }
+  ATTACHMENT {
+    uuid id PK
+    enum kind
+    string r2_key
+    string caption
+    date taken_at
+  }
+  ATTACHMENT_LINK {
+    uuid id PK
+    uuid attachment_id FK
+    string entity_type
+    uuid entity_id
+  }
+  MILESTONE {
+    uuid id PK
+    string name
+    date target_date
+    date achieved_at
+  }
+  MILESTONE_TASK {
+    uuid milestone_id FK
+    uuid task_id FK
+  }
+  NOTE {
+    uuid id PK
+    string entity_type
+    uuid entity_id
+    text body
+  }
+  AUDIT_LOG {
+    uuid id PK
+    string entity_type
+    uuid entity_id
+    uuid member_id FK
+    enum action
+    timestamp at
+    json changes
+  }
+        </pre>
+      </div>
+
+      <div class="callout animate" style="--i: 5">
+        <strong>Reading the people corner.</strong>
+        <code>PARTY</code> holds both people and organizations (<code>kind</code>).
+        <code>employs</code> is the <em>self-referential</em> <code>employer_party_id</code> — a person
+        points to their org (app-validated as <code>kind = organization</code>).
+        A <code>MEMBER</code> is a login that references its person <code>PARTY</code>.
+        Work is assigned through <code>TASK_ASSIGNMENT</code> (M2M) to <em>any</em> party — you, a
+        contact, or a whole shop. <code>PARTY_ROLE</code> tags a party as contractor / supplier /
+        collaborator, so suppliers are just parties (see <code>MATERIAL.supplier_party_id</code>).
+        <code>ATTACHMENT_LINK</code>, <code>EXPENSE_LINE</code> and <code>NOTE</code>'s target all use
+        the same polymorphic <code>entity_type</code> + <code>entity_id</code> shape — the
+        <code>may target</code> edges shown are representative, not exhaustive. Two model-wide
+        conventions are omitted from the boxes for clarity, exactly as <code>project_id</code> is:
+        the provenance columns (<code>created_at</code> / <code>created_by</code> /
+        <code>updated_at</code> / <code>updated_by</code>) on every aggregate root, and the
+        <code>AUDIT_LOG</code> row written by every mutation (capture-now, view-later).
+      </div>
+
+      <div class="section-label" style="--accent: var(--build); --accent-dim: var(--build-dim)">
+        Domain clusters <span class="rule"></span>
+      </div>
+      <div class="grid">
+        <div class="card c-people animate" style="--i: 0">
+          <h3>People &amp; parties <span class="tag">core</span></h3>
+          <p><code>Project</code>, <code>Party</code> (person/org), <code>Party Role</code>,
+          <code>Member</code>, <code>Membership</code>, <code>Task Assignment</code>.</p>
+          <p>One <b>Party</b> table for everyone; roles not types; a <b>Member</b> is a login bound to
+          a person-party. Work assigns M2M to any party.</p>
+        </div>
+        <div class="card c-build animate" style="--i: 1">
+          <h3>The build <span class="tag">core</span></h3>
+          <p><code>Phase</code>, <code>Task</code>, <code>Task Dependency</code>, <code>Task Material</code>,
+          <code>Task Tool</code>, <code>Material</code>, <code>Tool</code>, <code>Milestone</code>.</p>
+          <p>Tasks sit in one Phase and form a finish-to-start DAG, and assign to parties. A Task also
+          <i>needs</i> materials (with quantity) and tools — feeding the <b>readiness</b> check.</p>
+        </div>
+        <div class="card c-money animate" style="--i: 2">
+          <h3>Money <span class="tag">core</span></h3>
+          <p><code>Budget Category</code>, <code>Budget</code> (target per category), <code>Expense</code>,
+          <code>Expense Line</code>.</p>
+          <p>Estimates are forecasts; the single Expense ledger is the source of truth. One Expense
+          itemizes into many <code>Expense Line</code>s, so one shop receipt can pay for many Materials
+          (and labour invoices target a Party).</p>
+        </div>
+        <div class="card c-docs animate" style="--i: 3">
+          <h3>Documentation <span class="tag">core</span></h3>
+          <p><code>Attachment</code>, <code>Attachment Link</code>, <code>Note</code>.</p>
+          <p>One mechanism for photos + documents in R2; the Build log is a view of all images ordered
+          by <code>taken_at</code>.</p>
+        </div>
+      </div>
+
+      <div class="section-label" style="--accent: var(--money); --accent-dim: var(--money-dim)">
+        Non-obvious modelling decisions <span class="rule"></span>
+      </div>
+      <div class="grid">
+        <div class="card c-people animate" style="--i: 0">
+          <h3>One Party table, roles not types</h3>
+          <p>Person &amp; Organization share one table (<code>kind</code>); <code>name</code>/<code>kind</code>
+          are columns, the rest is <code>metadata</code> JSONB. Contractor/Supplier are <b>roles</b> a party
+          plays — one company can be both. No duplication.</p>
+        </div>
+        <div class="card c-people animate" style="--i: 1">
+          <h3>Assignment is M2M to Party</h3>
+          <p>A Task assigns to one or more parties via <code>task_assignment</code> — a Member, a specific
+          contact, or a whole two-person shop. The expensive-to-retrofit boundary, so decided up front.</p>
+        </div>
+        <div class="card c-people animate" style="--i: 2">
+          <h3>Member ≠ Person</h3>
+          <p><code>Member</code> = can log in (credentials, app role); <code>Party</code> = who they are.
+          Member references its person-party 1:1 — a user <i>is</i> a person without storing identity twice.</p>
+        </div>
+        <div class="card c-build animate" style="--i: 3">
+          <h3>A Task needs tasks, materials &amp; tools</h3>
+          <p>Three <code>task_*</code> link tables — <code>task_dependency</code> (other tasks),
+          <code>task_material</code> (+ quantity), <code>task_tool</code>. Together they drive
+          <b>readiness</b> in two tenses: <i>ready now</i> (blockers done + materials received + a tool
+          window covers the dates) and <i>at risk</i> (a material's <code>expected_arrival</code> lands
+          after the task's start). No auto-reschedule.</p>
+        </div>
+        <div class="card c-build animate" style="--i: 4">
+          <h3>One Tool, many hold windows</h3>
+          <p>The Tool row is stable identity (so "buy the saw once" never double-counts);
+          <code>tool_availability</code> holds zero-or-many windows, so the same excavator rented in
+          spring <i>and</i> autumn is two windows on one row, not two tools.</p>
+        </div>
+        <div class="card c-build animate" style="--i: 5">
+          <h3>Material: bulk vs. fixture</h3>
+          <p>Bulk = quantity + unit (cladding by m²); fixture = one row per item (each window), specs in
+          JSONB. A window <i>is</i> a Material; <code>expected_arrival</code> feeds the at-risk signal.</p>
+        </div>
+        <div class="card c-money animate" style="--i: 6">
+          <h3>Provenance + append-only audit</h3>
+          <p>Every aggregate root carries <code>created_at/by</code> + <code>updated_at/by</code>; every
+          mutation also writes an <code>audit_log</code> row (who, when, before/after) via one audited
+          write-path. Captured from day one, viewer deferred. See ADR-0006.</p>
+        </div>
+        <div class="card c-build animate" style="--i: 7">
+          <h3>Milestone is its own time axis</h3>
+          <p>A target date that spans phases (weathertight = roof + windows + sealing), orthogonal to
+          the work breakdown — the time-axis twin of Budget Category on money. Fulfilled by tasks
+          (M2M); on-track is <i>derived</i>, only <code>achieved_at</code> is stored &amp; manual.</p>
+        </div>
+        <div class="card c-docs animate" style="--i: 8">
+          <h3>Polymorphic links, not nullable FKs</h3>
+          <p><code>attachment_link</code>, <code>expense_line</code> and <code>Note</code>'s target share one
+          <code>entity_type</code>+<code>entity_id</code> shape. One photo documents a Task <i>and</i> a
+          Material; deleting an entity drops its links, never the file.</p>
+        </div>
+      </div>
+
+      <div class="section-label" style="--accent: var(--defer); --accent-dim: var(--defer-dim)">
+        Deferred — concept agreed, seam left, no rework to add <span class="rule"></span>
+      </div>
+      <div class="grid">
+        <div class="card c-defer animate" style="--i: 0">
+          <h3>Property above Project <span class="tag">deferred</span></h3>
+          <p>A durable <code>Property</code> (the cabin) will sit above Project — one cabin, many
+          projects (renovation, remodels, annual maintenance). Durable things (rooms, requirements,
+          owned tools, parties, access, build log) move up; effort-scoped things stay on Project.</p>
+          <div class="seam"><b>Seam:</b> inserting a parent above a single-Project root is a cheap,
+          unambiguous retrofit; build deferred durable concepts <code>property_id</code>-scoped from
+          birth. See ADR-0007.</div>
+        </div>
+        <div class="card c-defer animate" style="--i: 0">
+          <h3>Affiliation join table <span class="tag">deferred</span></h3>
+          <p>Today a person has one employer via <code>employer_party_id</code> (self-FK).</p>
+          <div class="seam"><b>Seam:</b> promote to <code>affiliation(person, org, title, is_primary_contact)</code> for many orgs + roles per person.</div>
+        </div>
+        <div class="card c-defer animate" style="--i: 1">
+          <h3>Room <span class="tag">deferred</span></h3>
+          <p>Per-room rollups may never be needed for one cabin.</p>
+          <div class="seam"><b>Seam:</b> nullable <code>room_id</code> on Task / Material / Expense, optional backfill.</div>
+        </div>
+        <div class="card c-defer animate" style="--i: 2">
+          <h3>Requirement <span class="tag">deferred</span></h3>
+          <p>The durable <i>bound</i> on a slot (“U-value ≤ 1.0”) that outlives any fixture filling it.</p>
+          <div class="seam"><b>Seam:</b> Requirement entity a fixture <b>satisfies</b>; actual vs. bound kept distinct.</div>
+        </div>
+        <div class="card c-defer animate" style="--i: 3">
+          <h3>Household inventory + Wishlist <span class="tag">deferred</span></h3>
+          <p>“What the cabin has &amp; wants” — separate from build supplies.</p>
+          <div class="seam"><b>Seam:</b> own entity reusing the have/want status pattern.</div>
+        </div>
+        <div class="card c-defer animate" style="--i: 4">
+          <h3>Permits &amp; inspections <span class="tag">deferred</span></h3>
+          <p>Dates + approval that gate work — an external dependency.</p>
+          <div class="seam"><b>Seam:</b> entity that blocks Tasks like a Dependency.</div>
+        </div>
+        <div class="card c-defer animate" style="--i: 5">
+          <h3>Labour time entries <span class="tag">deferred</span></h3>
+          <p>Hour-level tracking. Today: quotes in, invoices out.</p>
+          <div class="seam"><b>Seam:</b> optional <code>TimeEntry</code> rows (hours × rate); Expense link unchanged.</div>
+        </div>
+        <div class="card c-defer animate" style="--i: 6">
+          <h3>Offline · iCal · Google sync <span class="tag">deferred</span></h3>
+          <p>Light-offline reads/outbox, calendar export, two-way sync.</p>
+          <div class="seam"><b>Seam:</b> client UUIDs + idempotent writes already in place; sync maps by stable IDs.</div>
+        </div>
+      </div>
+
+      <p class="hint animate" style="--i: 6">
+        Source of truth: <code>CONTEXT.md</code> (glossary) and <code>docs/adr/0001–0007</code>.
+        Shows the agreed model from the planning session — not yet built.
+      </p>
+    </div>
+
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        look: 'classic',
+        themeVariables: {
+          primaryColor: isDark ? '#15293c' : '#e7eef5',
+          primaryBorderColor: isDark ? '#38bdf8' : '#0369a1',
+          primaryTextColor: isDark ? '#dbe7f1' : '#14283b',
+          lineColor: isDark ? '#6f8aa1' : '#5a7588',
+          textColor: isDark ? '#dbe7f1' : '#14283b',
+          fontSize: '15px',
+          fontFamily: "'IBM Plex Mono', monospace",
+          attributeBackgroundColorOdd: isDark ? '#0f1f30' : '#ffffff',
+          attributeBackgroundColorEven: isDark ? '#13243580' : '#f1f6fb',
+        },
+      });
+    </script>
+    <script>
+      // Zoom by resizing the SVG to a real layout size (not CSS transform), so the
+      // scroll container can actually reach every edge. Base size comes from the viewBox.
+      function getSvg(wrap) { return wrap.querySelector('.mermaid svg'); }
+      function initBase(svg) {
+        if (!svg.dataset.baseW) {
+          var vb = svg.viewBox && svg.viewBox.baseVal;
+          var rect = svg.getBoundingClientRect();
+          svg.dataset.baseW = vb && vb.width ? vb.width : rect.width;
+          svg.dataset.baseH = vb && vb.height ? vb.height : rect.height;
+          svg.style.maxWidth = 'none';
+        }
+      }
+      function setZoom(wrap, z) {
+        var svg = getSvg(wrap);
+        if (!svg) return;
+        initBase(svg);
+        z = Math.min(Math.max(z, 0.3), 5);
+        wrap.dataset.zoom = z;
+        svg.style.width = (svg.dataset.baseW * z) + 'px';
+        svg.style.height = (svg.dataset.baseH * z) + 'px';
+        wrap.classList.toggle('is-zoomed', z > 1.001);
+      }
+      function zoomDiagram(btn, factor) {
+        var wrap = btn.closest('.mermaid-wrap');
+        setZoom(wrap, parseFloat(wrap.dataset.zoom || '1') * factor);
+      }
+      function resetZoom(btn) {
+        setZoom(btn.closest('.mermaid-wrap'), 1);
+      }
+      document.querySelectorAll('.mermaid-wrap').forEach(function (wrap) {
+        // Ctrl/Cmd + wheel to zoom
+        wrap.addEventListener('wheel', function (e) {
+          if (!e.ctrlKey && !e.metaKey) return;
+          e.preventDefault();
+          var factor = e.deltaY < 0 ? 1.1 : 0.9;
+          setZoom(wrap, parseFloat(wrap.dataset.zoom || '1') * factor);
+        }, { passive: false });
+        // Drag to pan whenever the diagram overflows its viewport
+        var startX, startY, scrollL, scrollT, panning = false;
+        wrap.addEventListener('mousedown', function (e) {
+          if (e.target.closest('.zoom-controls')) return;
+          var canPan = wrap.scrollWidth > wrap.clientWidth + 1 || wrap.scrollHeight > wrap.clientHeight + 1;
+          if (!canPan) return;
+          panning = true;
+          wrap.classList.add('is-panning');
+          startX = e.clientX; startY = e.clientY;
+          scrollL = wrap.scrollLeft; scrollT = wrap.scrollTop;
+          e.preventDefault();
+        });
+        window.addEventListener('mousemove', function (e) {
+          if (!panning) return;
+          wrap.scrollLeft = scrollL - (e.clientX - startX);
+          wrap.scrollTop = scrollT - (e.clientY - startY);
+        });
+        window.addEventListener('mouseup', function () {
+          panning = false;
+          wrap.classList.remove('is-panning');
+        });
+      });
+    </script>
+  </body>
+</html>
